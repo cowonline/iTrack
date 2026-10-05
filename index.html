@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#FBF6EF">
+  <!-- Added to the iPhone home screen, this opens as its own app (no Safari bars),
+       and its saved data is exempt from Safari's "delete after 7 days unused" rule. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="iTrack">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>iTrack</title>
   <style>
     html, body { margin: 0; height: 100%; background: #FBF6EF; }
@@ -12,6 +18,47 @@
   </style>
 </head>
 <body>
-  <iframe src="https://script.google.com/macros/s/AKfycbz1YAR5Vu_flwLYOMpQqaQpKRxxSGERer_W9HkunRiQj7AnVUGijSGHMnDpOtt1GKlN/exec?view=1" title="iTrack" allow="clipboard-write"></iframe>
+  <iframe id="app" src="https://script.google.com/macros/s/AKfycbz1YAR5Vu_flwLYOMpQqaQpKRxxSGERer_W9HkunRiQj7AnVUGijSGHMnDpOtt1GKlN/exec?view=1" title="iTrack" allow="clipboard-write"></iframe>
+  <script>
+    // Keeps iTrack's sign-in (and its saved copy of your groups) on this phone.
+    // Safari forgets anything the app saves inside the frame as soon as the app
+    // is closed, but keeps what THIS page saves. The app asks for it on start-up
+    // and sends every change here. Only the iTrack frame on this page is answered.
+    (function () {
+      var PREFIX = 'itrack-app:';
+      var KEYS = ['itrack_session_v1', 'itrack_cache_v1', 'itrack_recent_v1'];
+      var CACHE = 'itrack_cache_v1';
+      var frame = document.getElementById('app');
+      function fromOurApp(ev) {
+        if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(ev.origin)) return false;
+        var w = ev.source;
+        for (var i = 0; w && i < 8; i++) {
+          if (w === frame.contentWindow) return true;
+          if (w === window) return false;
+          try { w = w.parent; } catch (e) { return false; }
+        }
+        return false;
+      }
+      window.addEventListener('message', function (ev) {
+        var d = ev.data;
+        if (!d || typeof d !== 'object' || typeof d.itrack !== 'string' || !fromOurApp(ev)) return;
+        if (d.itrack === 'store-get') {
+          var values = {};
+          KEYS.forEach(function (k) {
+            try { var v = localStorage.getItem(PREFIX + k); if (v != null) values[k] = v; } catch (e) { /* storage blocked */ }
+          });
+          ev.source.postMessage({ itrack: 'store-got', id: d.id, values: values }, ev.origin);
+        } else if (d.itrack === 'store-set' && KEYS.indexOf(d.key) !== -1 && typeof d.value === 'string') {
+          try { localStorage.setItem(PREFIX + d.key, d.value); }
+          catch (e) {
+            // Full: the saved copy of groups is the one thing that can go.
+            try { localStorage.removeItem(PREFIX + CACHE); if (d.key !== CACHE) localStorage.setItem(PREFIX + d.key, d.value); } catch (e2) { /* storage blocked */ }
+          }
+        } else if (d.itrack === 'store-remove' && KEYS.indexOf(d.key) !== -1) {
+          try { localStorage.removeItem(PREFIX + d.key); } catch (e) { /* storage blocked */ }
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
