@@ -20,11 +20,29 @@
 <body>
   <iframe id="app" src="https://script.google.com/macros/s/AKfycbz1YAR5Vu_flwLYOMpQqaQpKRxxSGERer_W9HkunRiQj7AnVUGijSGHMnDpOtt1GKlN/exec?view=1" title="iTrack" allow="clipboard-write"></iframe>
   <script>
-    // Keeps iTrack's sign-in (and its saved copy of your groups) on this phone.
+    // Keeps iTrack's sign-in (and its saved copy of your groups) on this phone,
+    // and passes on the code from a one-tap sign-in link.
     // Safari forgets anything the app saves inside the frame as soon as the app
     // is closed, but keeps what THIS page saves. The app asks for it on start-up
     // and sends every change here. Only the iTrack frame on this page is answered.
     (function () {
+      // A sign-in link (…/iTrack/#k=CODE): take the code, and wipe it from the
+      // address bar at once so it isn't kept in a bookmark or home-screen icon.
+      // It's only ever handed to the iTrack frame below, which signs in with it.
+      var linkCode = '';
+      function takeLinkCode() {
+        var m = /(?:^#|&)k=([A-Za-z0-9-]{8,9})(?:&|$)/.exec(location.hash || '');
+        if (!m) return false;
+        linkCode = m[1];
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+        return true;
+      }
+      takeLinkCode();
+      // The page was already open and only the #k= part changed: restart the app
+      // so it picks the code up.
+      window.addEventListener('hashchange', function () {
+        if (takeLinkCode()) { var f = document.getElementById('app'); f.src = f.src; }
+      });
       var PREFIX = 'itrack-app:';
       var KEYS = ['itrack_session_v1', 'itrack_cache_v1', 'itrack_recent_v1'];
       var CACHE = 'itrack_cache_v1';
@@ -47,7 +65,8 @@
           KEYS.forEach(function (k) {
             try { var v = localStorage.getItem(PREFIX + k); if (v != null) values[k] = v; } catch (e) { /* storage blocked */ }
           });
-          ev.source.postMessage({ itrack: 'store-got', id: d.id, values: values }, ev.origin);
+          ev.source.postMessage({ itrack: 'store-got', id: d.id, values: values, signInCode: linkCode }, ev.origin);
+          linkCode = ''; // used once
         } else if (d.itrack === 'store-set' && KEYS.indexOf(d.key) !== -1 && typeof d.value === 'string') {
           try { localStorage.setItem(PREFIX + d.key, d.value); }
           catch (e) {
