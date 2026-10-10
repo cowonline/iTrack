@@ -15,30 +15,89 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>iTrack</title>
   <style>
+    :root { --hero: #1C1C1E; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
     html, body { margin: 0; height: 100%; }
     html { background: #F2F2F0; }
     iframe { display: block; border: 0; width: 100%; height: 100vh; height: 100dvh; }
+
+    /* Loading screen: a departures board riffling through letters and landing on
+       ITRACK, shown over the app while Google starts it (several seconds after a
+       quiet spell), until the app says its first screen is up ({itrack: 'ready'}).
+       The app draws the same board itself (#boot in Index.html) — keep them alike. */
+    #splash {
+      position: fixed; inset: 0; z-index: 2;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+      background: var(--hero);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      transition: opacity .25s ease;
+    }
+    #splash.done { opacity: 0; pointer-events: none; }
+    .board { display: flex; gap: 4px; }
+    .fl { width: 34px; height: 48px; border-radius: 6px;
+          background: linear-gradient(180deg, var(--flap-a) 0 49.4%, var(--seam) 49.4% 50.6%, var(--flap-b) 50.6% 100%);
+          color: var(--accent); font-size: 30px; font-weight: 500; display: flex; align-items: center; justify-content: center;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 1px 0 rgba(0,0,0,.4); }
+    .fl span { display: block; }
+    .fl.flip span { animation: flap .07s ease-out; }
+    @keyframes flap { from { transform: scaleY(.15) translateY(-40%); opacity: .4; } to { transform: none; opacity: 1; } }
+    .sub { font-size: 13px; color: var(--muted); }
+    .hint { font-size: 13px; line-height: 1.4; color: var(--muted); text-align: center; max-width: 260px; min-height: 3em; opacity: 0; transition: opacity .3s ease; }
+    .hint.show { opacity: 1; }
   </style>
   <script>
-    // The theme is kept inside the saved sign-in (below), so the status bar and the
-    // background behind the app (seen while it loads) can match it from the start.
-    // Colours as in the app's THEMES: hero = the dark band, ground = the page.
+    // The theme is kept inside the saved sign-in (below), so the status bar, the
+    // loading board and the background behind the app can match it from the start.
+    // Colours as in the app's THEMES / :root[data-theme] blocks: hero = the dark band,
+    // ground = the page, then the board's tiles and letters.
     var THEME_COLOURS = {
-      terminal: { hero: '#1C1C1E', ground: '#F2F2F0' },
-      night:    { hero: '#1C1C1E', ground: '#000000' },
-      harbour:  { hero: '#14213A', ground: '#EEF1F5' }
+      terminal: { hero: '#1C1C1E', ground: '#F2F2F0', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      night:    { hero: '#1C1C1E', ground: '#000000', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      harbour:  { hero: '#14213A', ground: '#EEF1F5', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
     };
     function setBar(session) {
       var t = 'terminal';
       try { var s = JSON.parse(session || 'null'); if (s && THEME_COLOURS[s.theme]) t = s.theme; } catch (e) { /* not a sign-in */ }
-      var c = THEME_COLOURS[t];
+      var c = THEME_COLOURS[t], r = document.documentElement.style;
       document.getElementById('bar').setAttribute('content', c.hero);
-      document.documentElement.style.background = c.ground;
+      r.background = c.ground;
+      r.setProperty('--hero', c.hero); r.setProperty('--muted', c.muted); r.setProperty('--accent', c.accent);
+      r.setProperty('--flap-a', c.flapA); r.setProperty('--flap-b', c.flapB); r.setProperty('--seam', c.seam);
     }
     try { setBar(localStorage.getItem('itrack-app:itrack_session_v1')); } catch (e) { /* storage blocked */ }
   </script>
 </head>
 <body>
+  <div id="splash" role="status" aria-label="Loading iTrack">
+    <div class="board" id="board"></div>
+    <div class="sub">Getting your groups&hellip;</div>
+    <div class="hint" id="hint">Still loading&hellip; the first open after a quiet spell can take a little longer.</div>
+  </div>
+  <script>
+    // The board: each tile riffles through letters and lands on its own, left to
+    // right; holds; shuffles again. hideSplash (below) ends it.
+    var stopBoard = (function () {
+      var WORD = 'ITRACK', CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', timers = [];
+      var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var board = document.getElementById('board');
+      var tiles = WORD.split('').map(function (c) {
+        var t = document.createElement('div'); t.className = 'fl'; t.innerHTML = '<span>' + (still ? c : '&nbsp;') + '</span>'; board.appendChild(t); return t;
+      });
+      function show(t, c) { t.innerHTML = '<span>' + c + '</span>'; t.classList.remove('flip'); void t.offsetWidth; t.classList.add('flip'); }
+      function run() {
+        tiles.forEach(function (t, i) {
+          var n = 6 + i * 3, k = 0;
+          var iv = setInterval(function () {
+            if (++k >= n) { clearInterval(iv); show(t, WORD[i]); return; }
+            show(t, CH[Math.floor(Math.random() * CH.length)]);
+          }, 70);
+          timers.push(iv);
+        });
+        timers.push(setTimeout(run, 6 * 3 * 70 + 6 * 70 + 1400));
+      }
+      if (!still) run();
+      return function () { timers.forEach(clearInterval); timers.forEach(clearTimeout); timers = []; };
+    })();
+  </script>
   <iframe id="app" src="https://script.google.com/macros/s/AKfycbz1YAR5Vu_flwLYOMpQqaQpKRxxSGERer_W9HkunRiQj7AnVUGijSGHMnDpOtt1GKlN/exec?view=1" title="iTrack" allow="clipboard-write"></iframe>
   <script>
     // Keeps iTrack's sign-in (and its saved copy of your groups) on this phone,
@@ -69,6 +128,19 @@
       var CACHE = 'itrack_cache_v1';
       var SESSION = 'itrack_session_v1';
       var frame = document.getElementById('app');
+      // The loading board comes down when the app says its first screen is up, or
+      // after 40 seconds whatever happens, so it can never cover a working app for
+      // good (e.g. an older app version, which doesn't send the signal).
+      var splash = document.getElementById('splash'), gone = false;
+      var hintTimer = setTimeout(function () { document.getElementById('hint').classList.add('show'); }, 12000);
+      var giveUpTimer = setTimeout(hideSplash, 40000);
+      function hideSplash() {
+        if (gone) return;
+        gone = true;
+        clearTimeout(hintTimer); clearTimeout(giveUpTimer); stopBoard();
+        splash.classList.add('done');
+        setTimeout(function () { splash.style.display = 'none'; }, 300);
+      }
       function fromOurApp(ev) {
         if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(ev.origin)) return false;
         var w = ev.source;
@@ -82,7 +154,8 @@
       window.addEventListener('message', function (ev) {
         var d = ev.data;
         if (!d || typeof d !== 'object' || typeof d.itrack !== 'string' || !fromOurApp(ev)) return;
-        if (d.itrack === 'store-get') {
+        if (d.itrack === 'ready') hideSplash();
+        else if (d.itrack === 'store-get') {
           var values = {};
           KEYS.forEach(function (k) {
             try { var v = localStorage.getItem(PREFIX + k); if (v != null) values[k] = v; } catch (e) { /* storage blocked */ }
