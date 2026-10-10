@@ -4,21 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <!-- The status bar takes the colour of the app's dark band at the top, for the theme
-       picked in the app (setBar below; Terminal until a theme is known). -->
+  <!-- The status bar matches the app's dark band at the top, for the theme picked in
+       the app (setBar below; Terminal until a theme is known). On the iPhone home
+       screen, theme-color is ignored (seen 10 Oct: the bar showed this page's own
+       background), so the bar is "black-translucent" (white clock and battery, drawn
+       over this page) and the page paints the strip under it itself: the body's top
+       padding, in the band colour. theme-color still tints Safari's own bar. -->
   <meta name="theme-color" content="#1C1C1E" id="bar">
   <!-- Added to the iPhone home screen, this opens as its own app (no Safari bars),
        and its saved data is exempt from Safari's "delete after 7 days unused" rule. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="iTrack">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>iTrack</title>
   <style>
     :root { --hero: #1C1C1E; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
     html, body { margin: 0; height: 100%; }
-    html { background: #F2F2F0; }
-    iframe { display: block; border: 0; width: 100%; height: 100vh; height: 100dvh; }
+    html { background: var(--hero); }
+    body { box-sizing: border-box; padding-top: env(safe-area-inset-top); }
+    iframe { display: block; border: 0; width: 100%; height: calc(100vh - env(safe-area-inset-top)); height: calc(100dvh - env(safe-area-inset-top)); }
 
     /* Loading screen: a departures board riffling through letters and landing on
        ITRACK, shown over the app while Google starts it (several seconds after a
@@ -46,20 +51,20 @@
   </style>
   <script>
     // The theme is kept inside the saved sign-in (below), so the status bar, the
-    // loading board and the background behind the app can match it from the start.
-    // Colours as in the app's THEMES / :root[data-theme] blocks: hero = the dark band,
-    // ground = the page, then the board's tiles and letters.
+    // loading board and the strip under the status bar can match it from the start.
+    // Colours as in the app's THEMES / :root[data-theme] blocks: hero = the dark band
+    // (this page's background, so also the status bar strip), then the board's tiles
+    // and letters.
     var THEME_COLOURS = {
-      terminal: { hero: '#1C1C1E', ground: '#F2F2F0', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
-      night:    { hero: '#1C1C1E', ground: '#000000', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
-      harbour:  { hero: '#14213A', ground: '#EEF1F5', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
+      terminal: { hero: '#1C1C1E', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      night:    { hero: '#1C1C1E', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      harbour:  { hero: '#14213A', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
     };
     function setBar(session) {
       var t = 'terminal';
       try { var s = JSON.parse(session || 'null'); if (s && THEME_COLOURS[s.theme]) t = s.theme; } catch (e) { /* not a sign-in */ }
       var c = THEME_COLOURS[t], r = document.documentElement.style;
       document.getElementById('bar').setAttribute('content', c.hero);
-      r.background = c.ground;
       r.setProperty('--hero', c.hero); r.setProperty('--muted', c.muted); r.setProperty('--accent', c.accent);
       r.setProperty('--flap-a', c.flapA); r.setProperty('--flap-b', c.flapB); r.setProperty('--seam', c.seam);
     }
