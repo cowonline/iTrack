@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#FBF6EF">
+  <!-- The status bar takes the colour of the app's dark band at the top, for the theme
+       picked in the app (setBar below; Terminal until a theme is known). -->
+  <meta name="theme-color" content="#1C1C1E" id="bar">
   <!-- Added to the iPhone home screen, this opens as its own app (no Safari bars),
        and its saved data is exempt from Safari's "delete after 7 days unused" rule. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,9 +15,28 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>iTrack</title>
   <style>
-    html, body { margin: 0; height: 100%; background: #FBF6EF; }
+    html, body { margin: 0; height: 100%; }
+    html { background: #F2F2F0; }
     iframe { display: block; border: 0; width: 100%; height: 100vh; height: 100dvh; }
   </style>
+  <script>
+    // The theme is kept inside the saved sign-in (below), so the status bar and the
+    // background behind the app (seen while it loads) can match it from the start.
+    // Colours as in the app's THEMES: hero = the dark band, ground = the page.
+    var THEME_COLOURS = {
+      terminal: { hero: '#1C1C1E', ground: '#F2F2F0' },
+      night:    { hero: '#1C1C1E', ground: '#000000' },
+      harbour:  { hero: '#14213A', ground: '#EEF1F5' }
+    };
+    function setBar(session) {
+      var t = 'terminal';
+      try { var s = JSON.parse(session || 'null'); if (s && THEME_COLOURS[s.theme]) t = s.theme; } catch (e) { /* not a sign-in */ }
+      var c = THEME_COLOURS[t];
+      document.getElementById('bar').setAttribute('content', c.hero);
+      document.documentElement.style.background = c.ground;
+    }
+    try { setBar(localStorage.getItem('itrack-app:itrack_session_v1')); } catch (e) { /* storage blocked */ }
+  </script>
 </head>
 <body>
   <iframe id="app" src="https://script.google.com/macros/s/AKfycbz1YAR5Vu_flwLYOMpQqaQpKRxxSGERer_W9HkunRiQj7AnVUGijSGHMnDpOtt1GKlN/exec?view=1" title="iTrack" allow="clipboard-write"></iframe>
@@ -46,6 +67,7 @@
       var PREFIX = 'itrack-app:';
       var KEYS = ['itrack_session_v1', 'itrack_cache_v1', 'itrack_recent_v1'];
       var CACHE = 'itrack_cache_v1';
+      var SESSION = 'itrack_session_v1';
       var frame = document.getElementById('app');
       function fromOurApp(ev) {
         if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(ev.origin)) return false;
@@ -73,8 +95,10 @@
             // Full: the saved copy of groups is the one thing that can go.
             try { localStorage.removeItem(PREFIX + CACHE); if (d.key !== CACHE) localStorage.setItem(PREFIX + d.key, d.value); } catch (e2) { /* storage blocked */ }
           }
+          if (d.key === SESSION) setBar(d.value); // a theme picked in the app
         } else if (d.itrack === 'store-remove' && KEYS.indexOf(d.key) !== -1) {
           try { localStorage.removeItem(PREFIX + d.key); } catch (e) { /* storage blocked */ }
+          if (d.key === SESSION) setBar(null); // signed out: back to Terminal
         }
       });
     })();
