@@ -123,10 +123,21 @@
         return true;
       }
       takeLinkCode();
-      // The page was already open and only the #k= part changed: restart the app
-      // so it picks the code up.
+      // A group's view link (…/iTrack/#g=TOKEN, 17 Oct): opens that group read-only for anyone. Unlike a
+      // sign-in code it is NOT wiped from the address bar, so reloading the page keeps working; it is handed
+      // to the app every time it asks.
+      var linkGroup = '';
+      function takeLinkGroup() {
+        var m = /(?:^#|&)g=([A-Za-z0-9]{16})(?:&|$)/.exec(location.hash || '');
+        if (!m) return false;
+        linkGroup = m[1];
+        return true;
+      }
+      takeLinkGroup();
+      // The page was already open and only the #k= or #g= part changed: restart the app
+      // so it picks it up.
       window.addEventListener('hashchange', function () {
-        if (takeLinkCode()) { var f = document.getElementById('app'); f.src = f.src; }
+        if (takeLinkCode() || takeLinkGroup()) { var f = document.getElementById('app'); f.src = f.src; }
       });
       var PREFIX = 'itrack-app:';
       var KEYS = ['itrack_session_v1', 'itrack_cache_v1', 'itrack_recent_v1'];
@@ -165,7 +176,7 @@
           KEYS.forEach(function (k) {
             try { var v = localStorage.getItem(PREFIX + k); if (v != null) values[k] = v; } catch (e) { /* storage blocked */ }
           });
-          ev.source.postMessage({ itrack: 'store-got', id: d.id, values: values, signInCode: linkCode }, ev.origin);
+          ev.source.postMessage({ itrack: 'store-got', id: d.id, values: values, signInCode: linkCode, groupLink: linkGroup }, ev.origin);
           linkCode = ''; // used once
         } else if (d.itrack === 'store-set' && KEYS.indexOf(d.key) !== -1 && typeof d.value === 'string') {
           try { localStorage.setItem(PREFIX + d.key, d.value); }
