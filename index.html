@@ -11,6 +11,8 @@
        over this page) and the page paints the strip under it itself: the body's top
        padding, in the band colour. theme-color still tints Safari's own bar. -->
   <meta name="theme-color" content="#1C1C1E" id="bar">
+  <!-- Start connecting to the app while this page is still loading. -->
+  <link rel="preconnect" href="https://itrack.cowonline.workers.dev">
   <!-- Added to the iPhone home screen, this opens as its own app (no Safari bars),
        and its saved data is exempt from Safari's "delete after 7 days unused" rule. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,8 +28,8 @@
     iframe { display: block; border: 0; width: 100%; height: calc(100vh - env(safe-area-inset-top)); height: calc(100dvh - env(safe-area-inset-top)); }
 
     /* Loading screen: a departures board riffling through letters and landing on
-       ITRACK, shown over the app while Google starts it (several seconds after a
-       quiet spell), until the app says its first screen is up ({itrack: 'ready'}).
+       ITRACK, shown over the app while it starts (on a slow connection), until the
+       app says its first screen is up ({itrack: 'ready'}).
        The app draws the same board itself (#boot in Index.html) — keep them alike. */
     #splash {
       position: fixed; inset: 0; z-index: 2;
@@ -103,7 +105,10 @@
       return function () { timers.forEach(clearInterval); timers.forEach(clearTimeout); timers = []; };
     })();
   </script>
-  <iframe id="app" src="https://script.google.com/macros/s/AKfycbz1YAR5Vu_flwLYOMpQqaQpKRxxSGERer_W9HkunRiQj7AnVUGijSGHMnDpOtt1GKlN/exec?view=1" title="iTrack" allow="clipboard-write"></iframe>
+  <!-- The app runs on Cloudflare at this address (until 2026-10 it was a Google Apps Script app,
+       framed here to hide Google's banner). If the address ever changes, change it here and in
+       APP_ORIGIN below, then re-paste this file on GitHub. -->
+  <iframe id="app" src="https://itrack.cowonline.workers.dev/" title="iTrack" allow="clipboard-write"></iframe>
   <script>
     // Keeps iTrack's sign-in (and its saved copy of your groups) on this phone,
     // and passes on the code from a one-tap sign-in link.
@@ -111,6 +116,7 @@
     // is closed, but keeps what THIS page saves. The app asks for it on start-up
     // and sends every change here. Only the iTrack frame on this page is answered.
     (function () {
+      var APP_ORIGIN = 'https://itrack.cowonline.workers.dev';
       // A sign-in link (…/iTrack/#k=CODE): take the code, and wipe it from the
       // address bar at once so it isn't kept in a bookmark or home-screen icon.
       // It's only ever handed to the iTrack frame below, which signs in with it.
@@ -158,7 +164,7 @@
         setTimeout(function () { splash.style.display = 'none'; }, 300);
       }
       function fromOurApp(ev) {
-        if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(ev.origin)) return false;
+        if (ev.origin !== APP_ORIGIN) return false;
         var w = ev.source;
         for (var i = 0; w && i < 8; i++) {
           if (w === frame.contentWindow) return true;
