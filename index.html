@@ -31,8 +31,13 @@
        refresh, inside its frame. */
     html, body { margin: 0; height: 100%; overscroll-behavior: none; }
     html { background: var(--hero); }
-    body { box-sizing: border-box; padding-top: env(safe-area-inset-top); }
-    iframe { display: block; border: 0; width: 100%; height: calc(100vh - env(safe-area-inset-top)); height: calc(100dvh - env(safe-area-inset-top)); }
+    /* The frame is pinned to the screen's edges, from just under the status bar (whose strip shows this page's
+       background: the theme's band colour) to the very bottom (28 Oct 2026). It used to be sized as "screen height minus
+       the status bar" (100dvh - inset), which on an iPhone home-screen app came out short and left the dark page showing
+       as a bar along the bottom. The pinning is done by a box around it: an iframe itself won't stretch between top and
+       bottom (it falls back to 150px), a box does, and the frame fills the box. */
+    #frame { position: fixed; top: env(safe-area-inset-top); left: 0; right: 0; bottom: 0; }
+    iframe { display: block; border: 0; width: 100%; height: 100%; }
 
     /* Loading screen: a departures board riffling through letters and landing on
        ITRACK, shown over the app while it starts (on a slow connection), until the
@@ -115,7 +120,7 @@
   <!-- The app runs on Cloudflare at this address (until 2026-10 it was a Google Apps Script app,
        framed here to hide Google's banner). If the address ever changes, change it here and in
        APP_ORIGIN below, then re-paste this file on GitHub. -->
-  <iframe id="app" src="https://itrack.cowonline.workers.dev/" title="iTrack" allow="clipboard-write"></iframe>
+  <div id="frame"><iframe id="app" src="https://itrack.cowonline.workers.dev/" title="iTrack" allow="clipboard-write"></iframe></div>
   <script>
     // Keeps iTrack's sign-in (and its saved copy of your groups) on this phone,
     // and passes on the code from a one-tap sign-in link.
