@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <!-- The status bar matches the app's dark band at the top, for the theme picked in
-       the app (setBar below; Terminal until a theme is known). On the iPhone home
-       screen, theme-color is ignored (seen 10 Oct: the bar showed this page's own
-       background), so the bar is "black-translucent" (white clock and battery, drawn
-       over this page) and the page paints the strip under it itself: the body's top
-       padding, in the band colour. theme-color still tints Safari's own bar. -->
-  <meta name="theme-color" content="#1C1C1E" id="bar">
+  <!-- The status bar: the iPhone's normal one again (28 Oct 2026, her call, as before the 10 Oct redesign): a dark clock
+       on a light strip, and iOS gives the app exactly the screen below it, so the frame fills it (100dvh) and lists reach
+       the bottom edge. From 10 Oct to 28 Oct the page used "black-translucent" (white clock over a strip in the band
+       colour it painted itself) and sized the frame "screen height minus the status bar", which left a gap: a band along
+       the bottom, or the header sliding under the clock (backups/pre-redesign-2026-10-10 has the page before that).
+       theme-color only tints Safari's own bar (ignored on the home screen, seen 10 Oct). -->
+  <meta name="theme-color" content="#F2F2F0" id="bar">
   <!-- Start connecting to the app while this page is still loading. -->
   <link rel="preconnect" href="https://itrack.cowonline.workers.dev">
   <!-- Added to the iPhone home screen, this opens as its own app (no Safari bars),
@@ -22,25 +22,15 @@
        Both files sit next to this page in the GitHub repo. An iPhone keeps the icon it had until iTrack is re-added. -->
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>iTrack</title>
   <style>
     :root { --hero: #1C1C1E; --page: #F2F2F0; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
-    /* No overscroll-behavior here (28 Oct 2026): with it, the frame stopped short of the bottom of an iPhone home-screen
-       app at rest and left a band; without it (as on Google) the list reaches the bottom edge, and a bounce past the end
-       shows this page's background, which is the app's own colour (--page), not black. */
-    html, body { margin: 0; height: 100%; }
-    /* This page is painted in the app's own background colour, --page (28 Oct 2026): whatever of it shows (a bounce
-       past the end of a list) then reads as part of the app, not as a black band (the Pickleball page does the same).
-       Only the strip behind the clock and battery keeps the band colour (body::before). */
-    html { background: var(--page); }
-    body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--hero); z-index: 1; }
-    /* The frame's size as in the Google days, kept on purpose (28 Oct 2026, her call): at rest the list reaches the
-       bottom edge; scrolling to the end of a list nudges this page along, so the header's top tucks under the clock.
-       Tried and undone on 28 Oct, each left a band along the bottom: pinning the frame to the screen's edges, stopping
-       the app's own bounce, and stopping this page's bounce (overscroll-behavior). */
-    body { box-sizing: border-box; padding-top: env(safe-area-inset-top); }
-    iframe { display: block; border: 0; width: 100%; height: calc(100vh - env(safe-area-inset-top)); height: calc(100dvh - env(safe-area-inset-top)); }
+    /* This page's background is the app's own page colour (--page), so the strip behind the dark clock is light and any
+       bounce past the end of a list shows the app's colour, never black. The frame fills the screen below the status bar
+       (as before 10 Oct); no padding and no "minus the status bar" sum. */
+    html, body { margin: 0; height: 100%; background: var(--page); }
+    iframe { display: block; border: 0; width: 100%; height: 100vh; height: 100dvh; }
 
     /* Loading screen: a departures board riffling through letters and landing on
        ITRACK, shown over the app while it starts (on a slow connection), until the
@@ -74,14 +64,15 @@
     // the board's tiles and letters.
     var THEME_COLOURS = {
       terminal: { hero: '#1C1C1E', page: '#F2F2F0', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
-      night:    { hero: '#1C1C1E', page: '#000000', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      // Night flight's own page is black, but the strip behind the iPhone's dark clock must be light: Terminal's grey.
+      night:    { hero: '#1C1C1E', page: '#F2F2F0', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
       harbour:  { hero: '#14213A', page: '#EEF1F5', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
     };
     function setBar(session) {
       var t = 'terminal';
       try { var s = JSON.parse(session || 'null'); if (s && THEME_COLOURS[s.theme]) t = s.theme; } catch (e) { /* not a sign-in */ }
       var c = THEME_COLOURS[t], r = document.documentElement.style;
-      document.getElementById('bar').setAttribute('content', c.hero);
+      document.getElementById('bar').setAttribute('content', c.page);
       r.setProperty('--hero', c.hero); r.setProperty('--page', c.page); r.setProperty('--muted', c.muted); r.setProperty('--accent', c.accent);
       r.setProperty('--flap-a', c.flapA); r.setProperty('--flap-b', c.flapB); r.setProperty('--seam', c.seam);
     }
