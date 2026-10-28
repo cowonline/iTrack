@@ -10,7 +10,9 @@
        colour it painted itself) and sized the frame "screen height minus the status bar", which left a gap: a band along
        the bottom, or the header sliding under the clock (backups/pre-redesign-2026-10-10 has the page before that).
        theme-color only tints Safari's own bar (ignored on the home screen, seen 10 Oct). -->
-  <meta name="theme-color" content="#F2F2F0" id="bar">
+  <!-- The strip behind the clock shows this page's background: the theme's band colour (setBar below), and iOS then
+       draws the clock light so it stays readable (tried on her phone on the test copy, 28 Oct 2026: "trial page A"). -->
+  <meta name="theme-color" content="#1C1C1E" id="bar">
   <!-- Start connecting to the app while this page is still loading. -->
   <link rel="preconnect" href="https://itrack.cowonline.workers.dev">
   <!-- Added to the iPhone home screen, this opens as its own app (no Safari bars),
@@ -25,11 +27,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>iTrack</title>
   <style>
-    :root { --hero: #1C1C1E; --page: #F2F2F0; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
-    /* This page's background is the app's own page colour (--page), so the strip behind the dark clock is light and any
-       bounce past the end of a list shows the app's colour, never black. The frame fills the screen below the status bar
-       (as before 10 Oct); no padding and no "minus the status bar" sum. */
-    html, body { margin: 0; height: 100%; background: var(--page); }
+    :root { --hero: #1C1C1E; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
+    /* This page's background is the theme's band colour, which iOS shows in the strip behind the clock. The frame fills
+       the screen below the status bar (as before 10 Oct); no padding and no "minus the status bar" sum. */
+    html, body { margin: 0; height: 100%; background: var(--hero); }
     iframe { display: block; border: 0; width: 100%; height: 100vh; height: 100dvh; }
 
     /* Loading screen: a departures board riffling through letters and landing on
@@ -60,20 +61,18 @@
     // The theme is kept inside the saved sign-in (below), so the status bar, the
     // loading board and the strip under the status bar can match it from the start.
     // Colours as in the app's THEMES / :root[data-theme] blocks: hero = the dark band
-    // (the status bar strip), page = the app's page background (--bg: this page's background, behind the frame), then
-    // the board's tiles and letters.
+    // (this page's background, so the status bar strip), then the board's tiles and letters.
     var THEME_COLOURS = {
-      terminal: { hero: '#1C1C1E', page: '#F2F2F0', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
-      // Night flight's own page is black, but the strip behind the iPhone's dark clock must be light: Terminal's grey.
-      night:    { hero: '#1C1C1E', page: '#F2F2F0', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
-      harbour:  { hero: '#14213A', page: '#EEF1F5', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
+      terminal: { hero: '#1C1C1E', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      night:    { hero: '#1C1C1E', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      harbour:  { hero: '#14213A', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
     };
     function setBar(session) {
       var t = 'terminal';
       try { var s = JSON.parse(session || 'null'); if (s && THEME_COLOURS[s.theme]) t = s.theme; } catch (e) { /* not a sign-in */ }
       var c = THEME_COLOURS[t], r = document.documentElement.style;
-      document.getElementById('bar').setAttribute('content', c.page);
-      r.setProperty('--hero', c.hero); r.setProperty('--page', c.page); r.setProperty('--muted', c.muted); r.setProperty('--accent', c.accent);
+      document.getElementById('bar').setAttribute('content', c.hero);
+      r.setProperty('--hero', c.hero); r.setProperty('--muted', c.muted); r.setProperty('--accent', c.accent);
       r.setProperty('--flap-a', c.flapA); r.setProperty('--flap-b', c.flapB); r.setProperty('--seam', c.seam);
     }
     try { setBar(localStorage.getItem('itrack-app:itrack_session_v1')); } catch (e) { /* storage blocked */ }
