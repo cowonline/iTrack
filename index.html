@@ -26,20 +26,19 @@
   <title>iTrack</title>
   <style>
     :root { --hero: #1C1C1E; --page: #F2F2F0; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
-    /* overscroll-behavior: no bounce of this outer page (28 Oct 2026: pulling past the end of a list in the home-screen
-       app slid the whole app up over a dark strip; the Pickleball page always had this). The app scrolls, and pulls to
-       refresh, inside its frame. */
-    html, body { margin: 0; height: 100%; overscroll-behavior: none; }
-    /* This page is painted in the app's own background colour, --page (28 Oct 2026): on an iPhone home-screen app iOS
-       ends the frame a little short of the bottom edge, and in the band colour that gap showed as a black bar along the
-       bottom. In the app's colour it reads as part of the page (the Pickleball page does the same). Only the strip
-       behind the clock and battery keeps the band colour (body::before). */
+    /* No overscroll-behavior here (28 Oct 2026): with it, the frame stopped short of the bottom of an iPhone home-screen
+       app at rest and left a band; without it (as on Google) the list reaches the bottom edge, and a bounce past the end
+       shows this page's background, which is the app's own colour (--page), not black. */
+    html, body { margin: 0; height: 100%; }
+    /* This page is painted in the app's own background colour, --page (28 Oct 2026): whatever of it shows (a bounce
+       past the end of a list) then reads as part of the app, not as a black band (the Pickleball page does the same).
+       Only the strip behind the clock and battery keeps the band colour (body::before). */
     html { background: var(--page); }
     body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--hero); z-index: 1; }
-    /* The frame's size as in the Google days, kept on purpose (28 Oct 2026, her call). On an iPhone home-screen app it
-       comes out a status bar's height short of the screen; scrolling inside the app nudges this page along, which tucks
-       that gap up behind the dark strip under the clock (the header's top then slides under the clock). Pinning the
-       frame to the edges, or stopping the app's own bounce, left the gap at the bottom as a bar instead: both undone. */
+    /* The frame's size as in the Google days, kept on purpose (28 Oct 2026, her call): at rest the list reaches the
+       bottom edge; scrolling to the end of a list nudges this page along, so the header's top tucks under the clock.
+       Tried and undone on 28 Oct, each left a band along the bottom: pinning the frame to the screen's edges, stopping
+       the app's own bounce, and stopping this page's bounce (overscroll-behavior). */
     body { box-sizing: border-box; padding-top: env(safe-area-inset-top); }
     iframe { display: block; border: 0; width: 100%; height: calc(100vh - env(safe-area-inset-top)); height: calc(100dvh - env(safe-area-inset-top)); }
 
