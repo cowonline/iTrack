@@ -26,7 +26,10 @@
   <title>iTrack</title>
   <style>
     :root { --hero: #1C1C1E; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
-    html, body { margin: 0; height: 100%; }
+    /* overscroll-behavior: no bounce of this outer page (28 Oct 2026: pulling past the end of a list in the home-screen
+       app slid the whole app up over a dark strip; the Pickleball page always had this). The app scrolls, and pulls to
+       refresh, inside its frame. */
+    html, body { margin: 0; height: 100%; overscroll-behavior: none; }
     html { background: var(--hero); }
     body { box-sizing: border-box; padding-top: env(safe-area-inset-top); }
     iframe { display: block; border: 0; width: 100%; height: calc(100vh - env(safe-area-inset-top)); height: calc(100dvh - env(safe-area-inset-top)); }
