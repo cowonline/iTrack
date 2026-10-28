@@ -25,12 +25,17 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>iTrack</title>
   <style>
-    :root { --hero: #1C1C1E; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
+    :root { --hero: #1C1C1E; --page: #F2F2F0; --muted: #98989F; --accent: #FFD60A; --flap-a: #3A3A40; --flap-b: #28282C; --seam: #121214; }
     /* overscroll-behavior: no bounce of this outer page (28 Oct 2026: pulling past the end of a list in the home-screen
        app slid the whole app up over a dark strip; the Pickleball page always had this). The app scrolls, and pulls to
        refresh, inside its frame. */
     html, body { margin: 0; height: 100%; overscroll-behavior: none; }
-    html { background: var(--hero); }
+    /* This page is painted in the app's own background colour, --page (28 Oct 2026): on an iPhone home-screen app iOS
+       ends the frame a little short of the bottom edge, and in the band colour that gap showed as a black bar along the
+       bottom. In the app's colour it reads as part of the page (the Pickleball page does the same). Only the strip
+       behind the clock and battery keeps the band colour (body::before). */
+    html { background: var(--page); }
+    body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--hero); z-index: 1; }
     /* The frame is pinned to the screen's edges, from just under the status bar (whose strip shows this page's
        background: the theme's band colour) to the very bottom (28 Oct 2026). It used to be sized as "screen height minus
        the status bar" (100dvh - inset), which on an iPhone home-screen app came out short and left the dark page showing
@@ -67,19 +72,19 @@
     // The theme is kept inside the saved sign-in (below), so the status bar, the
     // loading board and the strip under the status bar can match it from the start.
     // Colours as in the app's THEMES / :root[data-theme] blocks: hero = the dark band
-    // (this page's background, so also the status bar strip), then the board's tiles
-    // and letters.
+    // (the status bar strip), page = the app's page background (--bg: this page's background, behind the frame), then
+    // the board's tiles and letters.
     var THEME_COLOURS = {
-      terminal: { hero: '#1C1C1E', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
-      night:    { hero: '#1C1C1E', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
-      harbour:  { hero: '#14213A', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
+      terminal: { hero: '#1C1C1E', page: '#F2F2F0', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      night:    { hero: '#1C1C1E', page: '#000000', muted: '#98989F', accent: '#FFD60A', flapA: '#3A3A40', flapB: '#28282C', seam: '#121214' },
+      harbour:  { hero: '#14213A', page: '#EEF1F5', muted: '#9AA6BC', accent: '#F2C14E', flapA: '#283B60', flapB: '#1F2F4E', seam: '#0A1324' }
     };
     function setBar(session) {
       var t = 'terminal';
       try { var s = JSON.parse(session || 'null'); if (s && THEME_COLOURS[s.theme]) t = s.theme; } catch (e) { /* not a sign-in */ }
       var c = THEME_COLOURS[t], r = document.documentElement.style;
       document.getElementById('bar').setAttribute('content', c.hero);
-      r.setProperty('--hero', c.hero); r.setProperty('--muted', c.muted); r.setProperty('--accent', c.accent);
+      r.setProperty('--hero', c.hero); r.setProperty('--page', c.page); r.setProperty('--muted', c.muted); r.setProperty('--accent', c.accent);
       r.setProperty('--flap-a', c.flapA); r.setProperty('--flap-b', c.flapB); r.setProperty('--seam', c.seam);
     }
     try { setBar(localStorage.getItem('itrack-app:itrack_session_v1')); } catch (e) { /* storage blocked */ }
